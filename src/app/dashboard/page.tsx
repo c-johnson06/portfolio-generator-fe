@@ -17,7 +17,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch("http://localhost:5035/api/me", {
+        const response = await fetch("https://localhost:7089/api/me", {
             credentials: "include",
         });
 
