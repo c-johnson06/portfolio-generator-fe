@@ -55,13 +55,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 text-white overflow-x-hidden">
-      {/* Animated background elements */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-3/4 right-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl animate-pulse delay-500"></div>
-      </div>
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-900 to-gray-900 text-white overflow-x-hidden">
 
       {/* Header */}
       <header className={`container mx-auto px-4 py-6 flex justify-between items-center sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-gray-900/90 backdrop-blur-sm py-4' : ''}`}>
