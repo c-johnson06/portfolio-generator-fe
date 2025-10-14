@@ -104,7 +104,7 @@ export default function HomePage() {
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <BadgePlus className="h-4 w-4 text-yellow-400" />
-              <span className="text-sm font-medium">New: AI-Powered Descriptions</span>
+              <span className="text-sm font-medium">New: AI-Powered Comparative Analysis</span>
               <div className="h-1 w-1 bg-green-400 rounded-full animate-pulse"></div>
             </motion.div>
             
@@ -309,11 +309,10 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <Sparkles className="h-6 w-6 text-purple-400" />
-              <span className="text-xl font-bold">PortfolioGen</span>
+              <Newspaper className="h-6 w-6 text-purple-400" />
             </div>
             <div className="text-gray-400 text-sm">
-              © {new Date().getFullYear()} PortfolioGen. All rights reserved.
+              {new Date().getFullYear()}
             </div>
           </div>
         </div>
