@@ -9,6 +9,7 @@ import Link from "next/link";
 
 export default function HomePage() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://localhost:7089";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,7 +20,7 @@ export default function HomePage() {
   }, []);
 
   const handleLogin = () => {
-    window.location.href = "https://localhost:7089/auth/login";
+    window.location.href = `${API_BASE}/auth/login`;
   };
 
   // Animation variants
