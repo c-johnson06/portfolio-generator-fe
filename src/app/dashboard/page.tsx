@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { X, Sparkles, FileText, BarChart3 } from "lucide-react";
+import Image from "next/image";
 
 type User = {
   login: string;
@@ -55,11 +56,11 @@ export default function DashboardPage() {
   const [jobDescription, setJobDescription] = useState<string>("");
   const [coverLetter, setCoverLetter] = useState<string>("");
   const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
-  
   const [isComparativeAnalysisDialogOpen, setIsComparativeAnalysisDialogOpen] = useState(false);
   const [analysisJobDescription, setAnalysisJobDescription] = useState<string>("");
   const [analysisResult, setAnalysisResult] = useState<ComparativeAnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://localhost:7089";
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -95,7 +96,7 @@ export default function DashboardPage() {
           const savedRepos = resumeData.selectedRepositories;
           
           initializedRepos = reposData.map(repo => {
-            const savedRepo = savedRepos.find((sr: any) => sr.repoId === repo.id);
+            const savedRepo = savedRepos.find((sr: { repoId: string; customTitle?: string; customBulletPoints?: string[] }) => sr.repoId === repo.id);
             return {
               ...repo,
               selected: !!savedRepo,
@@ -161,7 +162,7 @@ export default function DashboardPage() {
     };
 
     try {
-      const response = await fetch("https://localhost:7089/api/user/resume", {
+      const response = await fetch(`${API_BASE}/api/user/resume`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -231,7 +232,7 @@ export default function DashboardPage() {
     if (!editingRepo || !user) return;
     setIsGenerating(true);
     try {
-      const response = await fetch("https://localhost:7089/api/ai/generate-bullets", {
+      const response = await fetch(`${API_BASE}/api/ai/generate-bullets`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -273,7 +274,7 @@ export default function DashboardPage() {
         return;
       }
       
-      const response = await fetch("https://localhost:7089/api/user/extract-skills", {
+      const response = await fetch(`${API_BASE}/api/user/extract-skills`, {
         method: "POST",
         credentials: "include",
 
@@ -319,7 +320,7 @@ export default function DashboardPage() {
     setCoverLetter("");
 
     try {
-        const response = await fetch("https://localhost:7089/api/ai/generate-cover-letter", {
+        const response = await fetch(`${API_BASE}/api/ai/generate-cover-letter`, {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
@@ -368,7 +369,7 @@ export default function DashboardPage() {
     setAnalysisResult(null);
 
     try {
-        const response = await fetch("https://localhost:7089/api/ai/compare-portfolio", {
+        const response = await fetch(`${API_BASE}/api/ai/compare-portfolio`, {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
@@ -422,7 +423,7 @@ export default function DashboardPage() {
         
         {user && (
           <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-            <img 
+            <Image 
               src={user.avatarUrl} 
               alt="User avatar" 
               className="w-24 h-24 rounded-full mb-4 border-2 border-gray-600" 
@@ -504,7 +505,7 @@ export default function DashboardPage() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
               <div>
                 <h2 className="text-2xl font-semibold text-white">Select & Edit Repositories</h2>
-                <p className="text-gray-400 mb-4">Click on a repository card to select or deselect it for your portfolio. Click "Edit" to customize its details.</p>
+                <p className="text-gray-400 mb-4">Click on a repository card to select or deselect it for your portfolio. Click &quot;Edit&quot; to customize its details.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button 

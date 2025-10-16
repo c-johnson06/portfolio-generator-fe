@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Github, FileText, Wand2, Sparkles, Newspaper, BadgePlus } from "lucide-react";
+import { Github, FileText, Wand2, Newspaper, BadgePlus } from "lucide-react";
 import { motion, easeOut } from "framer-motion";
+import Link from "next/link";
 
 export default function HomePage() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -70,13 +71,13 @@ export default function HomePage() {
         
         <nav className="flex items-center gap-4">
           <Button variant="ghost" asChild className="text-gray-300 hover:text-black">
-            <a href="/">Home</a>
+            <Link href="/">Home</Link>
           </Button>
           <Button variant="ghost" asChild className="text-gray-300 hover:text-black">
-            <a href="/dashboard">Dashboard</a>
+            <Link href="/dashboard">Dashboard</Link>
           </Button>
           <Button variant="ghost" asChild className="text-gray-300 hover:text-black">
-            <a href="#">Examples</a>
+            <Link href="#">Examples</Link>
           </Button>
           <Button 
             variant="secondary" 
@@ -147,9 +148,9 @@ export default function HomePage() {
                 className="text-lg px-8 py-6 border-gray-700 hover:bg-gray-300"
                 asChild
               >
-                <a href="#features" className="text-lg px-8 py-6 text-black">
+                <Link href="#features" className="text-lg px-8 py-6 text-black">
                   See How It Works
-                </a>
+                </Link>
               </Button>
             </motion.div>
           </motion.div>
