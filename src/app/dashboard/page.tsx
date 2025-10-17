@@ -66,9 +66,9 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
       try {
         const [userRes, reposRes, resumeRes] = await Promise.all([
-          fetch("https://localhost:7089/api/user/me", { credentials: "include" }),
-          fetch("https://localhost:7089/api/user/repos", { credentials: "include" }),
-          fetch("https://localhost:7089/api/user/resume", { credentials: "include" }),
+          fetch(`${API_BASE}/api/user/me`, { credentials: "include" }),
+          fetch(`${API_BASE}/api/user/repos`, { credentials: "include" }),
+          fetch(`${API_BASE}/api/user/resume`, { credentials: "include" }),
         ]);
 
         if (!userRes.ok) throw new Error("Authentication failed. Please log in again.");
@@ -181,7 +181,7 @@ export default function DashboardPage() {
 
   const handleDownloadPdf = () => {
     if (!user) return;
-    window.open(`https://localhost:7089/api/pdf/resume/${user.login}/pdf`, '_blank');
+    window.open(`${API_BASE}/api/pdf/resume/${user.login}/pdf`, '_blank');
   };
   
   const handleOpenEditDialog = (repo: Repo) => {
