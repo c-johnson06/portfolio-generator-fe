@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { X, Sparkles, FileText, BarChart3 } from "lucide-react";
+import { ApiClient } from "@/lib/api-client";
 
 type User = {
   login: string;
@@ -59,75 +60,68 @@ export default function DashboardPage() {
   const [analysisJobDescription, setAnalysisJobDescription] = useState<string>("");
   const [analysisResult, setAnalysisResult] = useState<ComparativeAnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://localhost:7089";
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const [userRes, reposRes, resumeRes] = await Promise.all([
-          fetch(`${API_BASE}/api/user/me`, { credentials: "include" }),
-          fetch(`${API_BASE}/api/user/repos`, { credentials: "include" }),
-          fetch(`${API_BASE}/api/user/resume`, { credentials: "include" }),
-        ]);
-
-        if (!userRes.ok) throw new Error("Authentication failed. Please log in again.");
-        if (!reposRes.ok) throw new Error("Failed to fetch repositories.");
-
-        const userData: User = await userRes.json();
-        let reposDataRaw: Repo[] | undefined;
-        try {
-            reposDataRaw = await reposRes.json();
-        } catch (jsonErr) {
-            console.error("Error parsing repos JSON:", jsonErr);
-            reposDataRaw = [];
-        }
-        const reposData: Repo[] = Array.isArray(reposDataRaw) ? reposDataRaw : [];
-        
-        let initializedRepos = reposData.map(repo => ({ 
-          ...repo, 
-          selected: false,
-          customTitle: repo.name,
-          customBulletPoints: []
-        }));
-        
-        if (resumeRes.ok) {
-          const resumeData = await resumeRes.json();
-          const savedRepos = resumeData.selectedRepositories;
-          
-          initializedRepos = reposData.map(repo => {
-            const savedRepo = savedRepos.find((sr: { repoId: string; customTitle?: string; customBulletPoints?: string[] }) => sr.repoId === repo.id);
-            return {
-              ...repo,
-              selected: !!savedRepo,
-              customTitle: savedRepo?.customTitle || repo.name,
-              customBulletPoints: savedRepo?.customBulletPoints || []
-            };
-          });
-
-          setSkills(resumeData.skills || [])
-          
-          setUser({
-            ...userData,
-            email: resumeData.user.email,
-            linkedIn: resumeData.user.linkedIn,
-            summary: resumeData.user.professionalSummary,
-            isPremium: resumeData.user.isPremium || false
-          });
-        } else {
-          setUser(userData);
-        }
-        
-        setRepos(initializedRepos);
-
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboardData();
   }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Use ApiClient instead of fetch - automatically handles 401 redirects
+      const userData: User = await ApiClient.get('/api/user/me');
+      const reposData: Repo[] = await ApiClient.get('/api/user/repos');
+      
+      let initializedRepos = (Array.isArray(reposData) ? reposData : []).map(repo => ({ 
+        ...repo, 
+        selected: false,
+        customTitle: repo.name,
+        customBulletPoints: []
+      }));
+      
+      // Try to load resume data if it exists
+      try {
+        const resumeData = await ApiClient.get('/api/user/resume');
+        const savedRepos = resumeData.selectedRepositories;
+        
+        initializedRepos = (Array.isArray(reposData) ? reposData : []).map(repo => {
+          const savedRepo = savedRepos.find((sr: { repoId: string; customTitle?: string; customBulletPoints?: string[] }) => sr.repoId === repo.id);
+          return {
+            ...repo,
+            selected: !!savedRepo,
+            customTitle: savedRepo?.customTitle || repo.name,
+            customBulletPoints: savedRepo?.customBulletPoints || []
+          };
+        });
+
+        setSkills(resumeData.skills || []);
+        
+        setUser({
+          ...userData,
+          email: resumeData.user.email,
+          linkedIn: resumeData.user.linkedIn,
+          summary: resumeData.user.professionalSummary,
+          isPremium: resumeData.user.isPremium || false
+        });
+      } catch (resumeError) {
+        // Resume not found - use default user data
+        console.log("No resume data found, using defaults");
+        setUser(userData);
+      }
+      
+      setRepos(initializedRepos);
+      setError(null);
+
+    } catch (err) {
+      // 401 errors will auto-redirect, so this catches other errors
+      if (err instanceof Error && err.message !== 'Unauthorized') {
+        setError(err.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSelectRepo = (id: string) => {
     setRepos(
@@ -161,26 +155,17 @@ export default function DashboardPage() {
     };
 
     try {
-      const response = await fetch(`${API_BASE}/api/user/resume`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(resumeData),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to save portfolio: ${errorText}`);
-      }
+      await ApiClient.post('/api/user/resume', resumeData);
       alert("Portfolio saved successfully!");
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred while saving.");
+      alert(err instanceof Error ? err.message : "Failed to save portfolio");
     }
   };
 
   const handleDownloadPdf = () => {
     if (!user) return;
-    window.open(`${API_BASE}/api/pdf/resume/${user.login}/pdf`, '_blank');
+    window.open(`${ApiClient.getBaseUrl()}/api/pdf/resume/${user.login}/pdf`, '_blank');
   };
   
   const handleOpenEditDialog = (repo: Repo) => {
@@ -231,22 +216,11 @@ export default function DashboardPage() {
     if (!editingRepo || !user) return;
     setIsGenerating(true);
     try {
-      const response = await fetch(`${API_BASE}/api/ai/generate-bullets`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          owner: user.login,
-          repoName: editingRepo.name,
-        }),
+      const data = await ApiClient.post('/api/ai/generate-bullets', {
+        owner: user.login,
+        repoName: editingRepo.name,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to generate bullet points.");
-      }
-
-      const data = await response.json();
       if (data.bulletPoints && Array.isArray(data.bulletPoints)) {
         setEditingRepo({
           ...editingRepo,
@@ -261,8 +235,8 @@ export default function DashboardPage() {
   };
   
   const extractSkills = async () => {
-  if (!user) return;
-  
+    if (!user) return;
+    
     try {
       const selectedRepoNames = repos
         .filter(repo => repo.selected)
@@ -273,26 +247,15 @@ export default function DashboardPage() {
         return;
       }
       
-      const response = await fetch(`${API_BASE}/api/user/extract-skills`, {
-        method: "POST",
-        credentials: "include",
-
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          owner: user.login,
-          repoNames: selectedRepoNames
-        })
+      const data = await ApiClient.post('/api/user/extract-skills', {
+        owner: user.login,
+        repoNames: selectedRepoNames
       });
       
-      if (!response.ok) {
-        throw new Error("Failed to extract skills");
-      }
-      
-      const data = await response.json();
       setSkills(data.skills);
     } catch (error) {
-        console.error("Error extracting skills:", error);
-        alert("Error extracting skills");
+      console.error("Error extracting skills:", error);
+      alert(error instanceof Error ? error.message : "Error extracting skills");
     }
   };
 
@@ -319,29 +282,18 @@ export default function DashboardPage() {
     setCoverLetter("");
 
     try {
-        const response = await fetch(`${API_BASE}/api/ai/generate-cover-letter`, {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                owner: user.login,
-                repoNames: selectedRepoNames,
-                positionRequirements: jobDescription,
-            })
-        });
+      const data = await ApiClient.post('/api/ai/generate-cover-letter', {
+        owner: user.login,
+        repoNames: selectedRepoNames,
+        positionRequirements: jobDescription,
+      });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to generate cover letter.");
-        }
-
-        const data = await response.json();
-        setCoverLetter(data.coverLetter);
+      setCoverLetter(data.coverLetter);
     } catch (err) {
-        console.error("Error generating cover letter:", err);
-        alert(err instanceof Error ? err.message : "An unknown error occurred while generating the cover letter.");
+      console.error("Error generating cover letter:", err);
+      alert(err instanceof Error ? err.message : "An unknown error occurred while generating the cover letter.");
     } finally {
-        setIsGeneratingCoverLetter(false);
+      setIsGeneratingCoverLetter(false);
     }
   };
   
@@ -368,32 +320,22 @@ export default function DashboardPage() {
     setAnalysisResult(null);
 
     try {
-        const response = await fetch(`${API_BASE}/api/ai/compare-portfolio`, {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                jobDescription: analysisJobDescription,
-            })
-        });
+      const data = await ApiClient.post('/api/ai/compare-portfolio', {
+        jobDescription: analysisJobDescription,
+      });
 
-        if (!response.ok) {
-             if (response.status === 403 || response.status === 402) {
-                const errorData = await response.json();
-                alert(errorData.message || "This feature requires a premium account.");
-                return;
-            }
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to perform comparative analysis.");
-        }
-
-        const ComparativeAnalysisResult = await response.json();
-        setAnalysisResult(ComparativeAnalysisResult);
+      setAnalysisResult(data);
     } catch (err) {
-        console.error("Error running comparative analysis:", err);
+      console.error("Error running comparative analysis:", err);
+      
+      // Check if it's a premium feature error
+      if (err instanceof Error && (err.message.includes("premium") || err.message.includes("403") || err.message.includes("402"))) {
+        alert("This feature requires a premium account. Please upgrade to access comparative analysis.");
+      } else {
         alert(err instanceof Error ? err.message : "An unknown error occurred during analysis.");
+      }
     } finally {
-        setIsAnalyzing(false);
+      setIsAnalyzing(false);
     }
   };
 
@@ -409,7 +351,13 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center p-10">
-          <div className="text-red-500 text-xl">{error}</div>
+          <div className="text-red-500 text-xl mb-4">{error}</div>
+          <Button 
+            onClick={() => window.location.href = '/'}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            Return to Home
+          </Button>
         </div>
       </div>
     );
@@ -461,44 +409,45 @@ export default function DashboardPage() {
             className="mt-4 bg-gray-700 text-white border-gray-600 min-h-[120px]"
           />
         </div>
+
         <div className="mt-8 bg-gray-800 p-6 rounded-lg border border-gray-700">
-        <h2 className="text-2xl font-semibold text-white mb-4">Skills</h2>
-        <div className="flex flex-wrap gap-2 mb-4">
-          {skills.map((skill, index) => (
-            <div 
-              key={index} 
-              className="flex items-center bg-purple-600 text-white px-3 py-1 rounded-full text-sm"
-            >
-              {skill}
-              <button 
-                onClick={() => removeSkill(index)}
-                className="ml-2 text-white hover:text-gray-200"
+          <h2 className="text-2xl font-semibold text-white mb-4">Skills</h2>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {skills.map((skill, index) => (
+              <div 
+                key={index} 
+                className="flex items-center bg-purple-600 text-white px-3 py-1 rounded-full text-sm"
               >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <Input
-            placeholder="Add a skill"
-            value={newSkill}
-            onChange={(e) => setNewSkill(e.target.value)}
-            className="bg-gray-700 text-white border-gray-600"
-            onKeyPress={(e) => e.key === 'Enter' && addSkill()}
-          />
-          <Button onClick={addSkill} className="bg-purple-600 hover:bg-purple-700">
-            Add
+                {skill}
+                <button 
+                  onClick={() => removeSkill(index)}
+                  className="ml-2 text-white hover:text-gray-200"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add a skill"
+              value={newSkill}
+              onChange={(e) => setNewSkill(e.target.value)}
+              className="bg-gray-700 text-white border-gray-600"
+              onKeyPress={(e) => e.key === 'Enter' && addSkill()}
+            />
+            <Button onClick={addSkill} className="bg-purple-600 hover:bg-purple-700">
+              Add
+            </Button>
+          </div>
+          <Button 
+            onClick={extractSkills}
+            className="mt-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            Extract Skills from Selected Repositories
           </Button>
         </div>
-        <Button 
-          onClick={extractSkills}
-          className="mt-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-        >
-          <Sparkles className="mr-2 h-4 w-4" />
-          Extract Skills from Selected Repositories
-        </Button>
-      </div>
 
         <div className="mt-8 bg-gray-800 p-6 rounded-lg border border-gray-700">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">

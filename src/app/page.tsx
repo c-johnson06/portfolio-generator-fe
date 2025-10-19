@@ -6,10 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Github, FileText, Wand2, Newspaper, BadgePlus } from "lucide-react";
 import { motion, easeOut } from "framer-motion";
 import Link from "next/link";
+import { ApiClient } from "@/lib/api-client";
 
 export default function HomePage() {
   const [isScrolled, setIsScrolled] = useState(false);
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://localhost:7089";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,7 +20,8 @@ export default function HomePage() {
   }, []);
 
   const handleLogin = () => {
-    window.location.href = `${API_BASE}/auth/login`;
+    // Use the API client to get consistent base URL
+    window.location.href = `${ApiClient.getBaseUrl()}/auth/login`;
   };
 
   // Animation variants
