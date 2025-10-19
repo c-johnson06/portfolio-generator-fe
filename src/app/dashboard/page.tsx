@@ -69,7 +69,8 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-
+      
+      // Use ApiClient instead of fetch - automatically handles 401 redirects
       const userData: User = await ApiClient.get<User>('/api/user/me');
       const reposData: Repo[] = await ApiClient.get<Repo[]>('/api/user/repos');
       
@@ -80,6 +81,7 @@ export default function DashboardPage() {
         customBulletPoints: repo.customBulletPoints ?? []
       }));
       
+      // Try to load resume data if it exists
       try {
         const resumeData = await ApiClient.get<{user: { email: string; linkedIn: string; professionalSummary: string; isPremium?: boolean };skills?: string[];selectedRepositories: { repoId: string; customTitle?: string; customBulletPoints?: string[] }[];}>('/api/user/resume');
         const savedRepos = resumeData.selectedRepositories;
@@ -104,6 +106,7 @@ export default function DashboardPage() {
           isPremium: resumeData.user.isPremium || false
         });
       } catch {
+        // Resume not found - use default user data
         console.log("No resume data found, using defaults");
         setUser(userData);
       }
@@ -112,6 +115,7 @@ export default function DashboardPage() {
       setError(null);
 
     } catch (err) {
+      // 401 errors will auto-redirect, so this catches other errors
       if (err instanceof Error && err.message !== 'Unauthorized') {
         setError(err.message);
       }
@@ -125,6 +129,7 @@ export default function DashboardPage() {
       await ApiClient.post('/auth/logout', {});
       window.location.href = '/';
     } catch {
+      // Even if there's an error, redirect to home
       window.location.href = '/';
     }
   };
@@ -334,6 +339,7 @@ export default function DashboardPage() {
     } catch (err) {
       console.error("Error running comparative analysis:", err);
       
+      // Check if it's a premium feature error
       if (err instanceof Error && (err.message.includes("premium") || err.message.includes("403") || err.message.includes("402"))) {
         alert("This feature requires a premium account. Please upgrade to access comparative analysis.");
       } else {
@@ -557,6 +563,7 @@ export default function DashboardPage() {
 
       </main>
 
+      {/* All dialogs remain the same - I'll keep them for completeness but they're identical to before */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="bg-gray-800 border-gray-700 text-white">
           <DialogHeader>
@@ -640,6 +647,7 @@ export default function DashboardPage() {
               />
               <p className="text-sm text-gray-400 mt-2">
                 The AI will use your selected repositories ({repos.filter(r => r.selected).length} selected) and this job description to generate a personalized cover letter.
+                {repos.filter(r => r.selected).length > 4 && " Note: Only the first 4 selected repositories will be used."}
               </p>
             </div>
           )}
@@ -748,6 +756,7 @@ export default function DashboardPage() {
                 />
                 <p className="text-sm text-gray-400 mt-2">
                   The AI will analyze your selected repositories ({repos.filter(r => r.selected).length} selected) against this job description.
+                  {repos.filter(r => r.selected).length > 4 && " Note: Analysis may consider the first 4 selected repositories."}
                 </p>
               </div>
             )}
