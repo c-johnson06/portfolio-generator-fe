@@ -20,7 +20,7 @@ export default function HomePage() {
   }, []);
 
   const handleLogin = () => {
-    window.location.href = `/auth/login`;
+    window.location.href = `${API_BASE}/auth/login`;
   };
 
   // Animation variants
