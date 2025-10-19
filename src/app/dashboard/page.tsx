@@ -71,19 +71,19 @@ export default function DashboardPage() {
       setLoading(true);
       
       // Use ApiClient instead of fetch - automatically handles 401 redirects
-      const userData: User = await ApiClient.get('/api/user/me');
-      const reposData: Repo[] = await ApiClient.get('/api/user/repos');
+      const userData: User = await ApiClient.get<User>('/api/user/me');
+      const reposData: Repo[] = await ApiClient.get<Repo[]>('/api/user/repos');
       
-      let initializedRepos = (Array.isArray(reposData) ? reposData : []).map(repo => ({ 
-        ...repo, 
+      let initializedRepos = (Array.isArray(reposData) ? reposData : []).map(repo => ({
+        ...repo,
         selected: false,
         customTitle: repo.name,
-        customBulletPoints: []
+        customBulletPoints: repo.customBulletPoints ?? []
       }));
       
       // Try to load resume data if it exists
       try {
-        const resumeData = await ApiClient.get('/api/user/resume');
+        const resumeData = await ApiClient.get<{user: { email: string; linkedIn: string; professionalSummary: string; isPremium?: boolean };skills?: string[];selectedRepositories: { repoId: string; customTitle?: string; customBulletPoints?: string[] }[];}>('/api/user/resume');
         const savedRepos = resumeData.selectedRepositories;
         
         initializedRepos = (Array.isArray(reposData) ? reposData : []).map(repo => {
@@ -92,7 +92,7 @@ export default function DashboardPage() {
             ...repo,
             selected: !!savedRepo,
             customTitle: savedRepo?.customTitle || repo.name,
-            customBulletPoints: savedRepo?.customBulletPoints || []
+            customBulletPoints: savedRepo?.customBulletPoints ?? []
           };
         });
 
@@ -227,7 +227,7 @@ export default function DashboardPage() {
     if (!editingRepo || !user) return;
     setIsGenerating(true);
     try {
-      const data = await ApiClient.post('/api/ai/generate-bullets', {
+      const data = await ApiClient.post<{ bulletPoints: string[] }>('/api/ai/generate-bullets', {
         owner: user.login,
         repoName: editingRepo.name,
       });
@@ -258,7 +258,7 @@ export default function DashboardPage() {
         return;
       }
       
-      const data = await ApiClient.post('/api/user/extract-skills', {
+      const data = await ApiClient.post<{ skills: string[] }>('/api/user/extract-skills', {
         owner: user.login,
         repoNames: selectedRepoNames
       });
@@ -293,7 +293,7 @@ export default function DashboardPage() {
     setCoverLetter("");
 
     try {
-      const data = await ApiClient.post('/api/ai/generate-cover-letter', {
+      const data = await ApiClient.post<{ coverLetter: string }>('/api/ai/generate-cover-letter', {
         owner: user.login,
         repoNames: selectedRepoNames,
         positionRequirements: jobDescription,
@@ -331,7 +331,7 @@ export default function DashboardPage() {
     setAnalysisResult(null);
 
     try {
-      const data = await ApiClient.post('/api/ai/compare-portfolio', {
+      const data = await ApiClient.post<ComparativeAnalysisResult>('/api/ai/compare-portfolio', {
         jobDescription: analysisJobDescription,
       });
 

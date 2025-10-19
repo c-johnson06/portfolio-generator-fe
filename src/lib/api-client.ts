@@ -1,30 +1,30 @@
-// lib/api-client.ts
-// Create this file to handle all API requests with proper auth handling
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://portfolio-generator-fbbp.onrender.com";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://portfolio-generator-fbbp.onrender.com";
 
 export class ApiClient {
   static async fetch(endpoint: string, options: RequestInit = {}) {
     const url = `${API_BASE}${endpoint}`;
-    
+
     const response = await fetch(url, {
       ...options,
-      credentials: 'include', // Important: include cookies
+      credentials: "include", // Important: include cookies
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options.headers,
       },
     });
 
     // If unauthorized, redirect to login
     if (response.status === 401) {
-      // Store the current page to redirect back after login
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         const currentPath = window.location.pathname;
-        sessionStorage.setItem('redirectAfterLogin', currentPath);
-        window.location.href = `${API_BASE}/auth/login?returnUrl=${encodeURIComponent(currentPath)}`;
+        sessionStorage.setItem("redirectAfterLogin", currentPath);
+        window.location.href = `${API_BASE}/auth/login?returnUrl=${encodeURIComponent(
+          currentPath
+        )}`;
       }
-      throw new Error('Unauthorized');
+      throw new Error("Unauthorized");
     }
 
     // Handle other errors
@@ -46,30 +46,37 @@ export class ApiClient {
     return response;
   }
 
-  static async get(endpoint: string) {
-    const response = await this.fetch(endpoint, { method: 'GET' });
-    return response.json();
+  // 👇 add <T> to these methods so the return type is known
+  static async get<T = unknown>(endpoint: string): Promise<T> {
+    const response = await this.fetch(endpoint, { method: "GET" });
+    return response.json() as Promise<T>;
   }
 
-  static async post<T = unknown>(endpoint: string, data: Record<string, unknown>) {
+  static async post<T = unknown>(
+    endpoint: string,
+    data: Record<string, unknown>
+  ): Promise<T> {
     const response = await this.fetch(endpoint, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
     });
     return response.json() as Promise<T>;
   }
 
-  static async put<T = unknown>(endpoint: string, data: Record<string, unknown>) {
+  static async put<T = unknown>(
+    endpoint: string,
+    data: Record<string, unknown>
+  ): Promise<T> {
     const response = await this.fetch(endpoint, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     });
     return response.json() as Promise<T>;
   }
 
-  static async delete(endpoint: string) {
-    const response = await this.fetch(endpoint, { method: 'DELETE' });
-    return response.json();
+  static async delete<T = unknown>(endpoint: string): Promise<T> {
+    const response = await this.fetch(endpoint, { method: "DELETE" });
+    return response.json() as Promise<T>;
   }
 
   static getBaseUrl() {
@@ -79,9 +86,11 @@ export class ApiClient {
 
 // Export helper for login redirect
 export function redirectToLogin(returnUrl?: string) {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     const url = returnUrl || window.location.pathname;
-    sessionStorage.setItem('redirectAfterLogin', url);
-    window.location.href = `${API_BASE}/auth/login?returnUrl=${encodeURIComponent(url)}`;
+    sessionStorage.setItem("redirectAfterLogin", url);
+    window.location.href = `${API_BASE}/auth/login?returnUrl=${encodeURIComponent(
+      url
+    )}`;
   }
 }
