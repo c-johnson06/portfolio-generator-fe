@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { X, Sparkles, FileText, BarChart3 } from "lucide-react";
-import Image from "next/image";
 
 type User = {
   login: string;
@@ -423,7 +422,7 @@ export default function DashboardPage() {
         
         {user && (
           <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-            <Image 
+            <img 
               src={user.avatarUrl} 
               alt="User avatar" 
               className="w-24 h-24 rounded-full mb-4 border-2 border-gray-600" 
