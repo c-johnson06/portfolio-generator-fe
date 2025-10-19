@@ -1,3 +1,6 @@
+// lib/api-client.ts
+// Create this file to handle all API requests with proper auth handling
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://portfolio-generator-fbbp.onrender.com";
 
 export class ApiClient {
@@ -48,20 +51,20 @@ export class ApiClient {
     return response.json();
   }
 
-  static async post(endpoint: string, data: any) {
+  static async post<T = unknown>(endpoint: string, data: Record<string, unknown>) {
     const response = await this.fetch(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    return response.json();
+    return response.json() as Promise<T>;
   }
 
-  static async put(endpoint: string, data: any) {
+  static async put<T = unknown>(endpoint: string, data: Record<string, unknown>) {
     const response = await this.fetch(endpoint, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
-    return response.json();
+    return response.json() as Promise<T>;
   }
 
   static async delete(endpoint: string) {

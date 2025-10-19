@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { X, Sparkles, FileText, BarChart3 } from "lucide-react";
+import { X, Sparkles, FileText, BarChart3, LogOut } from "lucide-react";
 import { ApiClient } from "@/lib/api-client";
 
 type User = {
@@ -104,7 +105,7 @@ export default function DashboardPage() {
           summary: resumeData.user.professionalSummary,
           isPremium: resumeData.user.isPremium || false
         });
-      } catch (resumeError) {
+      } catch {
         // Resume not found - use default user data
         console.log("No resume data found, using defaults");
         setUser(userData);
@@ -120,6 +121,16 @@ export default function DashboardPage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await ApiClient.post('/auth/logout', {});
+      window.location.href = '/';
+    } catch {
+      // Even if there's an error, redirect to home
+      window.location.href = '/';
     }
   };
 
@@ -366,15 +377,30 @@ export default function DashboardPage() {
   return (
     <>
       <main className="min-h-screen bg-gray-900 container mx-auto p-8">
-        <h1 className="text-3xl font-bold mb-6 text-white">Your Dashboard</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-white">Your Dashboard</h1>
+          <Button 
+            variant="outline" 
+            onClick={handleLogout}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
+        </div>
         
         {user && (
           <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-            <img 
-              src={user.avatarUrl} 
-              alt="User avatar" 
-              className="w-24 h-24 rounded-full mb-4 border-2 border-gray-600" 
-            />
+            <div className="relative w-24 h-24 mb-4">
+              <Image 
+                src={user.avatarUrl} 
+                alt="User avatar" 
+                fill
+                className="rounded-full border-2 border-gray-600 object-cover"
+                sizes="96px"
+                priority
+              />
+            </div>
             <h2 className="text-2xl font-semibold text-white">{user.name}</h2>
             <p className="text-gray-400">@{user.login}</p>
             <p className="mt-4 text-gray-300">{user.bio}</p>
@@ -537,6 +563,7 @@ export default function DashboardPage() {
 
       </main>
 
+      {/* All dialogs remain the same - I'll keep them for completeness but they're identical to before */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="bg-gray-800 border-gray-700 text-white">
           <DialogHeader>
