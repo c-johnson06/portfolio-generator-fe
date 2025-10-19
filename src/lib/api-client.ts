@@ -21,7 +21,8 @@ export class ApiClient {
         sessionStorage.setItem('redirectAfterLogin', currentPath);
         window.location.href = `${API_BASE}/auth/login?returnUrl=${encodeURIComponent(currentPath)}`;
       }
-      throw new Error('Unauthorized');
+      await new Promise(() => {}); // Wait forever
+      throw new Error("Unauthorized"); // This line is unreachable, but satisfies TypeScript
     }
 
     // Handle other errors
